@@ -1,3 +1,4 @@
+const e = require("express");
 const express = require("express");
 const fs = require("fs");
 const { v4: uuid } = require('uuid')
@@ -29,6 +30,9 @@ router.get("/", (request, response) => {
 
 router.get("/:id", (request, response) => {
     const { id } = request.params;
+    if(id.length !== 36){
+        response.status(400).json({ message: "illegal id"});
+    }
     try {
         const data = fs.readFileSync(
             `./jsonFiles/${id}.json`,
@@ -36,8 +40,8 @@ router.get("/:id", (request, response) => {
             const dataJson = JSON.parse(data);
         response.status(200).send(dataJson);
     }
-    catch (e) {
-        response.status(400).json({ message: "Bad ID, not found", error: e });
+    catch {
+        response.status(404).json({ message: "Bad ID, not found"});
     }
 });
 
@@ -64,24 +68,38 @@ router.put("/:id", (request, response) => {
     const { id } = request.params;
     const { body } = request;
     const fileExists = fs.existsSync(`./jsonFiles/${id}.json`);
-    if (!fileExists) {
+     if (!fileExists && id.length === 36) {
         response.status(404).json(
             {
                 "message": "File not found",
                 "success": false
             });
         return;
+        }
+   else if(id.length !== 36){
+       return response.status(400).json({ message: "illegal id"});
     }
-    fs.writeFileSync(`./jsonFiles/${id}.json`,
-        JSON.stringify(body, null, 4));
-        response.status(200).send(body);
+else{
+        fs.writeFileSync(`./jsonFiles/${id}.json`,
+            JSON.stringify(body, null, 4));
+        return response.status(200).json({
+            "body": body,
+            "message": 'Success',
+            "id": id
+        }
+        );
+    }
+
 });
 
 router.delete("/:id", (request, response) => {
     const { id } = request.params;
     const fileExists = fs.existsSync(`./jsonFiles/${id}.json`);
-    if (!fileExists) {
-        response.status(401).json(
+    if(id.length !== 36){
+        response.status(400).json({ message: "illegal id"});
+    }
+    else if (!fileExists) {
+        response.status(404).json(
             {
                 "message": "File not found",
                 "success": false
